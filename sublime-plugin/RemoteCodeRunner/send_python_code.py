@@ -279,4 +279,6 @@ class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
             sublime.status_message('Request was invalid, maybe this plugin is outdated?')
         elif error is not None:
             sublime.status_message('error (unexpected): {0}'.format(error))
+        else:
+            sublime.status_message('Code sent to {0}:{1}'.format(host, port))
 
