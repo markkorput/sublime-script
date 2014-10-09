@@ -13,8 +13,8 @@ your Cinema 4D plugin directory.
 
     ```
     Cinema 4D RXX/
-      plugins/
-          remote-code-runner/
+        plugins/
+            remote-code-runner/
                 remote_code_runner.pyp
                 sublime-plugin/
                     RemoteCodeRunner/
