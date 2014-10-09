@@ -11,14 +11,16 @@ it like a script.
 1. Download the latest code from GitHub and unpack the content into
 your Cinema 4D plugin directory.
 
-    Cinema 4D RXX/
-        plugins/
-            remote-code-runner/
-                remote_code_runner.pyp
-                sublime-plugin/
-                    RemoteCodeRunner/
-                        ...
-                ...
+  ```
+Cinema 4D RXX/
+  plugins/
+      remote-code-runner/
+            remote_code_runner.pyp
+            sublime-plugin/
+                RemoteCodeRunner/
+                    ...
+            ...
+```
 
 2. Copy (or symlink) the `RemoteCodeRunner` folder to your sublime
 package directory. You can open this directory by heading to Sublime
