@@ -195,14 +195,16 @@ def default_settings():
         }
 
 def load_settings():
+    data = None
     try:
         with open(settings_filename) as fp:
             data = json.load(fp)
     except (IOError, ValueError) as exc:
-        return default_settings()
+        pass
 
     if not isinstance(data, dict):
-        return default_settings()
+        data = default_settings()
+    return data
 
 def save_settings():
     global settings
@@ -210,6 +212,7 @@ def save_settings():
         json.dump(settings, fp)
 
 settings = load_settings()
+assert isinstance(settings, dict)
 
 class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
 
@@ -240,10 +243,12 @@ class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
             error = send_code(filename, code, password, host, port)
         except ConnectionRefusedError as exc:
             sublime.status_message('Could not connect to {0}:{1}'.format(host, port))
+            return
         except socket.error as exc:
             sublime.status_message('socket.error occured, see console')
             show_console()
             traceback.print_exc()
+            return
 
         if error == 'invalid-password':
             sublime.status_message('Password was not accepted by the Remote Code Executor Server at {0}:{1}'.format(host, port))

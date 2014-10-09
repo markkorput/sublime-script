@@ -4,3 +4,4 @@
 that allows you to sent code from Sublime Text to Cinema 4D and execute
 it like a script.
 
+![Preview Image](preview.png)

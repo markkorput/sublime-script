@@ -291,13 +291,11 @@ class ServerThread(threading.Thread):
             if conn:
                 conn.close()
 
-    def on_connect(self, conn, addr):
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                           Cinema 4D integration
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-import c4d, collections
+import c4d, collections, traceback
 
 plugins = []
 
@@ -329,6 +327,7 @@ class CodeExecuterMessageHandler(c4d.plugins.MessageData):
         mat = doc.GetActiveMaterial()
         tp = doc.GetParticleSystem()
         return {
+            '__name__': '__main__',
             'doc': doc, 'op': op, 'mat': mat, 'tp': tp}
 
     def on_shutdown(self):
@@ -350,6 +349,7 @@ class CodeExecuterMessageHandler(c4d.plugins.MessageData):
                 if not self.queue: break
                 source = self.queue.popleft()
             try:
+                print ">> Running", source.filename or 'untitled', "..."
                 scope = self.get_scope()
                 source.execute(scope)
             except Exception as exc:
