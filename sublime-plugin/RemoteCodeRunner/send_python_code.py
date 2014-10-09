@@ -126,12 +126,14 @@ def parse_credentials(creds):
     separated by a double-colon to the port-name.
 
     Returns a tuple of ``(password, host, port)``. A *ValueError* is
-    raised if the format is invalid.
+    raised if the format is invalid. The password is optional and
+    None is returned if it is not specified.
     """
 
     password, _, creds = creds.rpartition('/')
     if not password:
-        raise ValueError('no password')
+        password = None
+
     host, _, creds = creds.rpartition(':')
     if not host:
         raise ValueError('no host')
@@ -145,7 +147,7 @@ def parse_credentials(creds):
 
     return (password, host, port)
 
-def send_code(filename, code, password, host, port):
+def send_code(filename, code, password, host, port, origin):
     """
     Sends Python code to Cinema 4D running at the specified location
     using the supplied password.
@@ -160,9 +162,12 @@ def send_code(filename, code, password, host, port):
     client.write("Content-length: {0}\n".format(len(code)))
     client.write("Encoding: utf8\n".encode('ascii'))
     client.write("Filename: {0}\n".format(filename))
+    client.write("Origin: {0}\n".format(origin))
 
-    passhash = hashlib.md5(password.encode('utf8')).hexdigest()
-    client.write("Password: {0}\n\n".format(passhash))
+    if password:
+        passhash = hashlib.md5(password.encode('utf8')).hexdigest()
+        client.write("Password: {0}\n".format(passhash))
+    client.write('\n') # end headers
 
     client.encoding = 'utf8'
     client.write(code)
@@ -171,7 +176,7 @@ def send_code(filename, code, password, host, port):
     result = client.readline().decode('ascii')
     client.close()
 
-    status = result.partition(':')[2]
+    status = result.partition(':')[2].strip()
     if status == 'ok':
         return None
     return status # error code
@@ -200,47 +205,65 @@ def load_settings():
         with open(settings_filename) as fp:
             data = json.load(fp)
     except (IOError, ValueError) as exc:
-        pass
+        data = {}
+    else:
+        if not isinstance(data, dict):
+            data = {}
 
-    if not isinstance(data, dict):
-        data = default_settings()
+    defaults = default_settings()
+    defaults.update(data)
     return data
 
 def save_settings():
     global settings
-    with open(settings_filename, 'w') as fp:
-        json.dump(settings, fp)
+    try:
+        with open(settings_filename, 'w') as fp:
+            json.dump(settings, fp)
+    except (IOError, OSError) as exc:
+        print("RemoteCodeRunner: could not save settings")
+        print(exc)
+        print()
+        show_console()
 
 settings = load_settings()
 assert isinstance(settings, dict)
+
+class SetPythonCodeDestinationCommand(sublime_plugin.ApplicationCommand):
+
+    def run(self):
+        credentials = settings['credentials']
+        window = sublime.active_window()
+        window.show_input_panel("Set Python Code send credentials:", credentials, self.on_done, None, None)
+
+    def on_done(self, text):
+        try:
+            password, host, port = parse_credentials(text)
+        except ValueError as exc:
+            sublime.status_message('Credentials format is invalid, must be like "password/host:port"')
+            return
+
+        settings['credentials'] = text
+        save_settings()
+        sublime.status_message('Credentials saved.')
 
 class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
 
     def run(self):
         global settings
-        credentials = settings.get('credentials')
+        credentials = settings['credentials']
 
-        window = sublime.active_window()
-        view = window.active_view()
-        window.show_input_panel("Send Python Code to:", credentials, self.on_done, None, None)
-
-    def on_done(self, text):
-        window = sublime.active_window()
-        view = window.active_view()
+        view = sublime.active_window().active_view()
         code = view.substr(sublime.Region(0, view.size()))
         filename = view.file_name() or 'untitled'
 
         try:
-            password, host, port = parse_credentials(text)
+            password, host, port = parse_credentials(credentials)
         except ValueError as exc:
-            sublime.status_message('Invalid credentials format, make sure it is like "password/host:port"')
+            sublime.status_message('Invalid credentials saved.')
             return
 
-        settings['credentials'] = text
-        save_settings()
-
         try:
-            error = send_code(filename, code, password, host, port)
+            error = send_code(filename, code, password, host, port, 'Sublime Text')
         except ConnectionRefusedError as exc:
             sublime.status_message('Could not connect to {0}:{1}'.format(host, port))
             return

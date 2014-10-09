@@ -124,15 +124,16 @@ class SourceObject(object):
     process which can be executed later.
     """
 
-    def __init__(self, addr, filename, source):
+    def __init__(self, addr, filename, source, origin):
         super(SourceObject, self).__init__()
         self.host, self.port = addr
         self.filename = filename
         self.source = source
+        self.origin = origin
 
     def __repr__(self):
-        return '<SourceObject "{0}" sent from {1}:{2}>'.format(
-            self.filename, self.host, self.port)
+        return '<SourceObject "{0}" sent from "{1}" @ {2}:{3}>'.format(
+            self.filename, self.origin, self.host, self.port)
 
     def execute(self, scope):
         """
@@ -222,7 +223,8 @@ def parse_request(conn, addr, required_password):
         except LookupError as exc:
             encoding = 'utf8'
 
-    # Get the filename and source code.
+    # Get the filename, origin and source code.
+    origin = headers.get('origin', 'unknown')
     filename = headers.get('filename', 'untitled')
     try:
         source = client.read(content_length).decode(encoding)
@@ -231,7 +233,7 @@ def parse_request(conn, addr, required_password):
         return None
 
     client.write('status: ok')
-    return SourceObject(addr, filename, source)
+    return SourceObject(addr, filename, source, origin)
 
 class ServerThread(threading.Thread):
     """
@@ -349,7 +351,7 @@ class CodeExecuterMessageHandler(c4d.plugins.MessageData):
                 if not self.queue: break
                 source = self.queue.popleft()
             try:
-                print ">> Running", source.filename or 'untitled', "..."
+                print "RemoteCodeRunner: running", source
                 scope = self.get_scope()
                 source.execute(scope)
             except Exception as exc:
