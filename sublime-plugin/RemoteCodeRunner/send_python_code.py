@@ -147,7 +147,7 @@ def parse_credentials(creds):
 
     return (password, host, port)
 
-def send_code(filename, code, password, host, port, origin):
+def send_code(filename, code, encoding, password, host, port, origin):
     """
     Sends Python code to Cinema 4D running at the specified location
     using the supplied password.
@@ -158,9 +158,15 @@ def send_code(filename, code, password, host, port, origin):
     client = SocketFile(socket.socket())
     client.connect((host, port)) #! ConnectionRefusedError
 
+    if isinstance(code, str):
+        code = code.encode(encoding)
+
     client.encoding = 'ascii'
     client.write("Content-length: {0}\n".format(len(code)))
-    client.write("Encoding: utf8\n".encode('ascii'))
+    # The Python instance on the other end will check for a coding
+    # declaration or otherwise raise a SyntaxError if an invalid
+    # character was found.
+    client.write("Encoding: binary\n")
     client.write("Filename: {0}\n".format(filename))
     client.write("Origin: {0}\n".format(origin))
 
@@ -169,7 +175,7 @@ def send_code(filename, code, password, host, port, origin):
         client.write("Password: {0}\n".format(passhash))
     client.write('\n') # end headers
 
-    client.encoding = 'utf8'
+    client.encoding = None
     client.write(code)
 
     # Read the response from the server.
@@ -254,6 +260,9 @@ class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
         view = sublime.active_window().active_view()
         code = view.substr(sublime.Region(0, view.size()))
         filename = view.file_name() or 'untitled'
+        encoding = view.encoding()
+        if encoding == 'Undefined':
+            encoding = 'UTF-8'
 
         try:
             password, host, port = parse_credentials(credentials)
@@ -262,7 +271,7 @@ class SendPythonCodeCommand(sublime_plugin.ApplicationCommand):
             return
 
         try:
-            error = send_code(filename, code, password, host, port, 'Sublime Text')
+            error = send_code(filename, code, encoding, password, host, port, 'Sublime Text')
         except ConnectionRefusedError as exc:
             sublime.status_message('Could not connect to {0}:{1}'.format(host, port))
             return

@@ -213,21 +213,23 @@ def parse_request(conn, addr, required_password):
         client.write('status: invalid-request')
         return None
 
-    # Get the encoding, default to UTF8.
+    # Get the encoding, default to binary.
     encoding = headers.get('encoding', None)
     if encoding is None:
-        encoding = 'utf8'
+        encoding = 'binary'
     else:
-        # default to UTF8 if the encoding does not exist.
+        # default to binary if the encoding does not exist.
         try: codecs.lookup(encoding)
         except LookupError as exc:
-            encoding = 'utf8'
+            encoding = 'binary'
 
     # Get the filename, origin and source code.
     origin = headers.get('origin', 'unknown')
     filename = headers.get('filename', 'untitled')
     try:
-        source = client.read(content_length).decode(encoding)
+        source = client.read(content_length)
+        if encoding != 'binary':
+            source = source.decode(encoding)
     except UnicodeDecodeError as exc:
         client.write('status: encoding-error')
         return None
