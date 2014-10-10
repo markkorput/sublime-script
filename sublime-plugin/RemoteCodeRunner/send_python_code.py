@@ -200,19 +200,18 @@ def default_settings():
         }
 
 def load_settings():
-    data = None
+    data = default_settings()
+
     try:
         with open(settings_filename) as fp:
-            data = json.load(fp)
+            json_data = json.load(fp)
     except (IOError, ValueError) as exc:
-        data = {}
+        pass
     else:
-        if not isinstance(data, dict):
-            data = {}
+        if isinstance(json_data, dict):
+            data.update(json_data)
 
-    result = default_settings()
-    result.update(data)
-    return result
+    return data
 
 def save_settings():
     global settings
