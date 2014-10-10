@@ -145,29 +145,21 @@ class SourceObject(object):
 
 def parse_headers(fp):
     """
-    Parses HTTP-like headers into a dictionary until two subsequent
-    empty lines where parsed. Invalid headers are ignored and if a
-    header is found twice, it won't be overwritten. Header-keys are
+    Parses HTTP-like headers into a dictionary until an empty line
+    is found. Invalid headers are ignored and if a header is found
+    twice, it won't overwrite its previous value. Header-keys are
     converted to lower-case and stripped of whitespace at both ends.
     """
 
     headers = {}
-    empty_lines_passed = 0
-
-    while empty_lines_passed < 1:
-
-        line = fp.readline()
+    while True:
+        line = fp.readline().strip()
         if not line: break
-        elif not line.strip():
-            empty_lines_passed += 1
-            continue
 
         key, _, value = line.partition(':')
-        key = key.strip().lower()
-        if value and key not in headers:
-            value = value.strip()
-            headers[key] = value
-        empty_lines_passed = 0
+        key = key.rstrip().lower()
+        if key not in headers:
+            headers[key] = value.lstrip()
 
     return headers
 
