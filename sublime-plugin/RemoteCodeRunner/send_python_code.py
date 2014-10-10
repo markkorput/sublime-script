@@ -210,9 +210,9 @@ def load_settings():
         if not isinstance(data, dict):
             data = {}
 
-    defaults = default_settings()
-    defaults.update(data)
-    return data
+    result = default_settings()
+    result.update(data)
+    return result
 
 def save_settings():
     global settings
