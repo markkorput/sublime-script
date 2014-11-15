@@ -321,10 +321,12 @@ class CodeExecuterMessageHandler(c4d.plugins.MessageData):
         doc = c4d.documents.GetActiveDocument()
         op = doc.GetActiveObject()
         mat = doc.GetActiveMaterial()
-        tp = doc.GetParticleSystem()
+        # removed/disabled particles system
+        # doesn't appear to be installed on my system
+        # tp = doc.GetParticleSystem()
         return {
             '__name__': '__main__',
-            'doc': doc, 'op': op, 'mat': mat, 'tp': tp}
+            'doc': doc, 'op': op, 'mat': mat} #, 'tp': tp}
 
     def on_shutdown(self):
         if self.thread:
